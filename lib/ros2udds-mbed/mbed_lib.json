@@ -1,0 +1,26 @@
+{
+    "name":"ros2udds-mbed",
+    "macros":[
+        "PLATFORM_NAME_BAREMETAL",
+        "USER_DISABLE_UDP_TRANSPORT",
+        "USER_DISABLE_TCP_TRANSPORT",
+        "UXR_CREATE_ENTITIES_USING_REF=0"
+    ],
+    "config":
+    {
+        "tx-pin":
+        {
+            "help": "No description",
+            "macro_name": "ROS2UDDS_SERIAL_TX_PIN",
+            "value": "USBTX",
+            "required": false
+        },
+        "rx-pin":
+        {
+            "help": "No description",
+            "macro_name": "ROS2UDDS_SERIAL_RX_PIN",
+            "value": "USBRX",
+            "required": false
+        }
+    }
+}

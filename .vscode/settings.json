@@ -1,0 +1,14 @@
+{
+    "C_Cpp.default.compilerPath": "~/opt/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-g++",
+    "files.associations": {
+        "microcdr.h": "c",
+        "common_internal.h": "c",
+        "string.h": "c",
+        "udp_transport_datagram_internal.h": "c",
+        "serial_transport_windows.h": "c",
+        "serial_transport_internal.h": "c",
+        "udp_transport_windows.h": "c",
+        "serial_transport_baremetal.h": "c",
+        "time.h": "c"
+    },
+}

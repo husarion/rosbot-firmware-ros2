@@ -1,0 +1,14 @@
+Micro-CDR/ci/*
+Micro-CDR/cmake/*
+Micro-CDR/examples/*
+Micro-CDR/test/*
+Micro-CDR/CMakeLists.txt
+Micro-CDR/CTestConfig.cmake
+Micro-XRCE-DDS-Client/ci/*
+Micro-XRCE-DDS-Client/cmake/*
+Micro-XRCE-DDS-Client/toolchains/*
+Micro-XRCE-DDS-Client/examples/*
+Micro-XRCE-DDS-Client/test/*
+Micro-XRCE-DDS-Client/CMakeLists.txt
+Micro-XRCE-DDS-Client/CMakeConfig.cmake
+
