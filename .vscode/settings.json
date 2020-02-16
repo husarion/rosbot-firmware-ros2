@@ -9,6 +9,8 @@
         "serial_transport_internal.h": "c",
         "udp_transport_windows.h": "c",
         "serial_transport_baremetal.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "helloworld.h": "c",
+        "baremetal_time.h": "c"
     },
 }

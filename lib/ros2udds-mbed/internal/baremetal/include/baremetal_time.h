@@ -8,8 +8,8 @@ extern "C"
 {
 #endif
 
-uint32_t baremetal_millis();
-uint32_t baremetal_micros();
+int64_t baremetal_millis();
+int64_t baremetal_micros();
 int64_t baremetal_nanos();
 void baremetal_init_timer();
 
