@@ -47,14 +47,20 @@ void test()
         return;
     }
 
+    LOG("Transport created successfully\r\n");
+
     // init session
     uxr_init_session(&session.session, &session.transport_serial.comm, session.session_key);
+
+    LOG("Session initialized successfully\r\n");
 
     if(!uxr_create_session(&session.session))
     {
         LOG("Error at create session.\n");
         return;
     }
+
+    LOG("Session created successfully!\r\n");
 
     session.active = true;
 

@@ -175,7 +175,7 @@
                 "${UserIncludes}"
             ],
             "browse": {
-                "limitSymbolsToIncludedHeaders": true,
+                "limitSymbolsToIncludedHeaders": false,
                 "path": [
                     "${DefaultIncludePath}"
                 ]
@@ -198,7 +198,7 @@
                 "${UserIncludes}"
             ],
             "browse": {
-                "limitSymbolsToIncludedHeaders": true,
+                "limitSymbolsToIncludedHeaders": false,
                 "path": [
                     "${DefaultIncludePath}"
                 ]
@@ -225,7 +225,7 @@
                 "/Library/Frameworks"
             ],
             "browse": {
-                "limitSymbolsToIncludedHeaders": true,
+                "limitSymbolsToIncludedHeaders": false,
                 "path": [
                     "${DefaultIncludePath}"
                 ]

@@ -9,7 +9,8 @@
     },
     "macros": [
         "ROSBOT_FW_VERSION=\"0.10.0\"",
-        "WELLCOME_BANNER"
+        "WELLCOME_BANNER",
+        "DEBUG_LOGS=1"
     ],
     "target_overrides": {
         "CORE2": {
@@ -19,18 +20,10 @@
             "events.shared-stacksize": 2048,
             "platform.default-serial-baud-rate": 230400,
             "platform.stdio-baud-rate": 230400,
-            "rosserial-mbed.tx_pin": "RPI_SERIAL_TX",
-            "rosserial-mbed.rx_pin": "RPI_SERIAL_RX",
-            "rosserial-mbed.baudrate": 500000,
-            "rosserial-mbed.out_buffer_size": 768,
-            "rosserial-mbed.in_buffer_size": 768,
-            "rosserial-mbed.rtos_kernel_ms_tick": 1,
-            "mpu9250-lib.i2c-sda": "SENS2_PIN4",
-            "mpu9250-lib.i2c-scl": "SENS2_PIN3",
-            "mpu9250-lib.i2c-frequency": 100000,
-            "mpu9250-lib.non-blocking": 1,
-            "enable-ws2812b-signalization": 0,
-            "vl53l0x.non-blocking": 1,
+            "target.stdio_uart_tx": "SENS3_PIN3", 
+            "target.stdio_uart_rx": "SENS3_PIN4",
+            "ros2udds-mbed.tx-pin": "FT_SERIAL_TX",
+            "ros2udds-mbed.rx-pin": "FT_SERIAL_RX",
             "target.OUTPUT_EXT": "hex"
         }
     }

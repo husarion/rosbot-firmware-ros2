@@ -252,18 +252,6 @@ typedef enum {
     ADC_VREF = 0xF1,
     ADC_VBAT = 0xF2,
 
-    // STDIO for console print
-#ifdef MBED_CONF_TARGET_STDIO_UART_TX
-    STDIO_UART_TX = MBED_CONF_TARGET_STDIO_UART_TX,
-#else
-    STDIO_UART_TX = PB_10,
-#endif
-#ifdef MBED_CONF_TARGET_STDIO_UART_RX
-    STDIO_UART_RX = MBED_CONF_TARGET_STDIO_UART_RX,
-#else
-    STDIO_UART_RX = PB_11,
-#endif
-
     // Generic signals namings
     LED1        = PE_2, 
     LED2        = PE_3, 
@@ -271,10 +259,6 @@ typedef enum {
     // Standardized button names
     BUTTON1 = PG_12,
     BUTTON2 = PG_13,
-    SERIAL_TX   = STDIO_UART_TX, /* USART 1*/
-    SERIAL_RX   = STDIO_UART_RX,
-    USBTX       = STDIO_UART_TX, /* USART 1*/
-    USBRX       = STDIO_UART_RX,
     I2C_SCL     = PB_8, /* I2C1 */
     I2C_SDA     = PB_9,
     SPI_MOSI    = PA_7,
@@ -510,7 +494,24 @@ typedef enum {
     MOT4B_IN = PE_6, 
     MOT4A_ENC = PB_6,
     MOT4B_ENC = PB_7,   
-    
+
+    // STDIO for console print
+#ifdef MBED_CONF_TARGET_STDIO_UART_TX
+    STDIO_UART_TX = MBED_CONF_TARGET_STDIO_UART_TX,
+#else
+    STDIO_UART_TX = PB_10,
+#endif
+#ifdef MBED_CONF_TARGET_STDIO_UART_RX
+    STDIO_UART_RX = MBED_CONF_TARGET_STDIO_UART_RX,
+#else
+    STDIO_UART_RX = PB_11,
+#endif
+
+    SERIAL_TX   = STDIO_UART_TX, /* USART 1*/
+    SERIAL_RX   = STDIO_UART_RX,
+    USBTX       = STDIO_UART_TX, /* USART 1*/
+    USBRX       = STDIO_UART_RX,
+
     // Not connected
     NC = (int)0xFFFFFFFF
 } PinName;

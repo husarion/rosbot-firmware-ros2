@@ -1,3 +1,8 @@
-#include <test/Basics/test1.h>
+#include <ROSbot.h>
 
-int main(){test();}
+int main()
+{
+    ROSbot rosbot;
+    rosbot.init();
+    rosbot.spin();
+}

@@ -17,7 +17,7 @@ extern "C"
 {
 #endif
 
-bool uxr_initSerialMbed(int baudrate);
+bool uxr_initSerialMbed(void * serial_instance, int baudrate);
 size_t uxr_writeSerialDataMbed(uint8_t* buf, size_t len);
 size_t uxr_readSerialDataMbed(uint8_t* buf, size_t len, int timeout);
 

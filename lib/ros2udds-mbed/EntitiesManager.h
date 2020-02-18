@@ -1,7 +1,7 @@
 #ifndef __ENTITIES_MANAGER_H__
 #define __ENTITIES_MANAGER_H__
 
-#include "udds_session_helper.h"
+#include "ros2udds.h"
 
 #define UDDS_PARTICIPANT_INDEX 0
 #define UDDS_PUBLISHER_INDEX 1
@@ -17,32 +17,23 @@
 
 #define UDDS_ARRAY_SIZE (3 + UDDS_MAX_TOPICS + UDDS_MAX_DATA_WRITERS + UDDS_MAX_DATA_READERS)
 
-namespace udds
+namespace ros2udds
 {
     class EntitiesManager
     {
         public:
 
-            struct Entity
-            {
-                uxrObjectId id;
-                const char * name;
-                const char * topic_type;
-                bool active;
-            };
-
             EntitiesManager();
             virtual ~EntitiesManager(){};
 
-            bool addEntity(Entity * entity);
-            bool addEntities(Entity *, size_t length);
-            bool removeEntity(Entity * entity);
-            bool registerEntities(udds_session_t * session);
-            bool unregisteEntities(udds_session_t * session);
-
-
+            bool addEntity(EntityUdds * entity);
+            bool addEntities(EntityUdds * entities, size_t length);
+            bool removeEntity(EntityUdds * entity);
+            bool registerEntities(SessionUdds * session);
+            bool unregisterEntities(SessionUdds * session);
+            
         private:
-            static int findEmpty(Entity **data, int start_index, int stop_index)
+            static int findEmpty(EntityUdds **data, int start_index, int stop_index)
             {
                 for(int i=start_index; i <= stop_index; i++)
                 {
@@ -52,8 +43,8 @@ namespace udds
             }
             
             int _entity_cnt;
-            Entity * _udds_entities[UDDS_ARRAY_SIZE];
+            EntityUdds * _udds_entities[UDDS_ARRAY_SIZE];
     };
-}
+} // ros2udds
 
 #endif /* __ENTITIES_MANAGER_H__ */

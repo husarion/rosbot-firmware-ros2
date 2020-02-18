@@ -9,7 +9,7 @@
     const char UDDS_TOPIC_XML[] = "<dds><topic><name>%s</name><dataType>%s</dataType></topic></dds>";
 #endif
 
-namespace udds
+namespace ros2udds
 {
 
 EntitiesManager::EntitiesManager()
@@ -21,7 +21,7 @@ EntitiesManager::EntitiesManager()
     }
 }
 
-bool EntitiesManager::addEntity(Entity * entity)
+bool EntitiesManager::addEntity(EntityUdds * entity)
 {
     if(entity == nullptr)
         return false;
@@ -32,9 +32,11 @@ bool EntitiesManager::addEntity(Entity * entity)
     case UXR_PARTICIPANT_ID:
         index = UDDS_PARTICIPANT_INDEX;
         break;
+
     case UXR_PUBLISHER_ID:
         index = UDDS_PUBLISHER_INDEX;
         break;
+
     case UXR_SUBSCRIBER_ID:
         index = UDDS_SUBSCRIBER_INDEX;
         break;
@@ -67,12 +69,22 @@ bool EntitiesManager::addEntity(Entity * entity)
     }
 }
 
-bool EntitiesManager::registerEntities(udds_session_t * session)
+bool EntitiesManager::addEntities(EntityUdds * entities, size_t length)
+{
+    int num = 0;
+    for(int i=0;i<length;i++) if(addEntity(entities + i)) num++;
+    return num == length;
+}
+
+bool EntitiesManager::registerEntities(SessionUdds * session)
 {
     if (session == nullptr ||
         session->active == false ||
         _udds_entities[UDDS_PARTICIPANT_INDEX] == nullptr)
+    {
+        LOG("EntitiesManager: registration start failure!\r\n");
         return false;
+    }
 
     char entity_profile[256];
     uint16_t request;
@@ -125,19 +137,19 @@ bool EntitiesManager::registerEntities(udds_session_t * session)
              // TODO add more info
              if(status == UXR_STATUS_ERR_ALREADY_EXISTS)
              {
-                LOG("Entity already exists.\r\n");
+                LOG("EntityUdds already exists.\r\n");
                 _udds_entities[i]->active = true;
                 successful_init++;
              }
              else
              {
-                LOG("Entity initialisation failure.\r\n",i);
+                LOG("EntityUdds initialisation failure.\r\n",i);
                  _udds_entities[i]->active = false;
              }
          }
          else
          {
-             LOG("Entity successfully registered.\r\n",i);
+             LOG("EntityUdds successfully registered.\r\n",i);
             _udds_entities[i]->active = true;
             successful_init++;
          }
@@ -155,4 +167,4 @@ bool EntitiesManager::registerEntities(udds_session_t * session)
 
 
 
-} // namespace udds
+} // namespace ros2udds

@@ -11,12 +11,12 @@ bool uxr_init_serial_platform(struct uxrSerialPlatform* platform, int fd,
   (void) (local_addr);
   
   /* Open device */
-  if(platform == NULL)
+  if(platform == NULL || platform->serial_instance == NULL)
   {
       return false;
   }
 
-  return uxr_initSerialMbed(platform->baudrate);
+  return uxr_initSerialMbed(platform->serial_instance, platform->baudrate);
 }
 
 bool uxr_close_serial_platform(struct uxrSerialPlatform* platform)
