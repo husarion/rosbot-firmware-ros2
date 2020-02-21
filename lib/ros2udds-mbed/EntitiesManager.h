@@ -22,13 +22,11 @@ namespace ros2udds
     class EntitiesManager
     {
         public:
-
             EntitiesManager();
             virtual ~EntitiesManager(){};
 
-            bool addEntity(EntityUdds * entity);
-            bool addEntities(EntityUdds * entities, size_t length);
-            bool removeEntity(EntityUdds * entity);
+            int addEntities(EntityUdds * entities, size_t length=1);
+            void removeEntity(EntityUdds * entity);
             bool registerEntities(SessionUdds * session);
             bool unregisterEntities(SessionUdds * session);
             
@@ -36,9 +34,7 @@ namespace ros2udds
             static int findEmpty(EntityUdds **data, int start_index, int stop_index)
             {
                 for(int i=start_index; i <= stop_index; i++)
-                {
                     if(data[i] == nullptr) return i;
-                }
                 return -1;
             }
             

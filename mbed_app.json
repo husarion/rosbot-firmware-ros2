@@ -14,6 +14,7 @@
     ],
     "target_overrides": {
         "CORE2": {
+            "rtos.main-thread-stack-size": 6144,
             "platform.all-stats-enabled": false,
             "events.shared-dispatch-from-application": 0,
             "events.shared-eventsize": 1024,
@@ -24,6 +25,11 @@
             "target.stdio_uart_rx": "SENS3_PIN4",
             "ros2udds-mbed.tx-pin": "FT_SERIAL_TX",
             "ros2udds-mbed.rx-pin": "FT_SERIAL_RX",
+            "mpu9250-lib.i2c-sda": "SENS2_PIN4",
+            "mpu9250-lib.i2c-scl": "SENS2_PIN3",
+            "mpu9250-lib.i2c-frequency": 100000,
+            "mpu9250-lib.non-blocking": 1,
+            "vl53l0x.non-blocking": 1,
             "target.OUTPUT_EXT": "hex"
         }
     }

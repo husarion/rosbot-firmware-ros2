@@ -15,72 +15,61 @@ namespace ros2udds
 EntitiesManager::EntitiesManager()
 :_entity_cnt(0)
 {
-    for (int i=0; i<UDDS_ARRAY_SIZE; i++)
-    {
-        _udds_entities[i] = nullptr;
-    }
+    for(int i=0;i<UDDS_ARRAY_SIZE;i++) _udds_entities[i] =nullptr;
 }
 
-bool EntitiesManager::addEntity(EntityUdds * entity)
+int EntitiesManager::addEntities(EntityUdds * entities, size_t length)
 {
-    if(entity == nullptr)
-        return false;
-
-    int index = -1;
-    switch (entity->id.type)
+    int index, num = 0;
+    if(entities == nullptr) return num;
+    
+    for(int i=0;i<length;i++)
     {
-    case UXR_PARTICIPANT_ID:
-        index = UDDS_PARTICIPANT_INDEX;
-        break;
+        index = -1;
+        switch ((entities + i)->id.type)
+        {
+        case UXR_PARTICIPANT_ID:
+            index = UDDS_PARTICIPANT_INDEX;
+            break;
 
-    case UXR_PUBLISHER_ID:
-        index = UDDS_PUBLISHER_INDEX;
-        break;
+        case UXR_PUBLISHER_ID:
+            index = UDDS_PUBLISHER_INDEX;
+            break;
 
-    case UXR_SUBSCRIBER_ID:
-        index = UDDS_SUBSCRIBER_INDEX;
-        break;
+        case UXR_SUBSCRIBER_ID:
+            index = UDDS_SUBSCRIBER_INDEX;
+            break;
 
-    case UXR_DATAREADER_ID:
-        index = findEmpty(_udds_entities, UDDS_DATA_READERS_START_INDEX, UDDS_DATA_READERS_START_INDEX + UDDS_MAX_DATA_READERS);
-        break;
+        case UXR_DATAREADER_ID:
+            index = findEmpty(_udds_entities, UDDS_DATA_READERS_START_INDEX, UDDS_DATA_READERS_START_INDEX + UDDS_MAX_DATA_READERS);
+            break;
 
-    case UXR_DATAWRITER_ID:
-        index = findEmpty(_udds_entities, UDDS_DATA_WRITERS_START_INDEX, UDDS_DATA_WRITERS_START_INDEX + UDDS_MAX_DATA_WRITERS);
-        break;
+        case UXR_DATAWRITER_ID:
+            index = findEmpty(_udds_entities, UDDS_DATA_WRITERS_START_INDEX, UDDS_DATA_WRITERS_START_INDEX + UDDS_MAX_DATA_WRITERS);
+            break;
 
-    case UXR_TOPIC_ID:
-        index = findEmpty(_udds_entities, UDDS_TOPICS_START_INDEX, UDDS_TOPICS_START_INDEX + UDDS_MAX_TOPICS);
-        break;
+        case UXR_TOPIC_ID:
+            index = findEmpty(_udds_entities, UDDS_TOPICS_START_INDEX, UDDS_TOPICS_START_INDEX + UDDS_MAX_TOPICS);
+            break;
 
-    default:
-        return false;
+        default:
+            break;
+        }
+
+        if (index != -1)
+        {
+            _udds_entities[index] = (entities+i);
+            _udds_entities[index]->active = false;
+            num++;
+        }
     }
-    if(index != -1)
-    {
-       _udds_entities[index]=entity;
-       _udds_entities[index]->active=false;
-       _entity_cnt++;
-       return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-bool EntitiesManager::addEntities(EntityUdds * entities, size_t length)
-{
-    int num = 0;
-    for(int i=0;i<length;i++) if(addEntity(entities + i)) num++;
-    return num == length;
+    _entity_cnt +=num;
+    return num;
 }
 
 bool EntitiesManager::registerEntities(SessionUdds * session)
 {
-    if (session == nullptr ||
-        session->active == false ||
-        _udds_entities[UDDS_PARTICIPANT_INDEX] == nullptr)
+    if (session == nullptr || session->active == false || _udds_entities[UDDS_PARTICIPANT_INDEX] == nullptr)
     {
         LOG("EntitiesManager: registration start failure!\r\n");
         return false;
@@ -132,7 +121,7 @@ bool EntitiesManager::registerEntities(SessionUdds * session)
                 break;
         }
 
-         if(!uxr_run_session_until_all_status(&session->session, 5000, &request, &status, 1))
+         if(!uxr_run_session_until_all_status(&session->session, 50, &request, &status, 1))
          {
              // TODO add more info
              if(status == UXR_STATUS_ERR_ALREADY_EXISTS)

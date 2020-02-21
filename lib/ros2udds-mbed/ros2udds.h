@@ -26,11 +26,7 @@ struct SessionUdds
     bool active;
 };
 
-bool initTransport(SessionUdds * session, void * serial_instance, int baudrate);
-bool initSession(SessionUdds * session, uint32_t session_key);
-bool deleteSession(SessionUdds * session);
-
-enum MessagePrefix
+enum EntityNamePrefix : int
 {
     TOPICS_PUBLISH = 0,
     TOPICS_SUBSCRIBE,
@@ -41,7 +37,13 @@ enum MessagePrefix
     ACTION
 };
 
-const char* getPrefixString(MessagePrefix prefix);
+bool initTransport(SessionUdds * session, void * serial_instance, int baudrate);
+
+bool initSession(SessionUdds * session, uint32_t session_key, uxrOnTopicFunc on_topic_func, void * args);
+
+bool deleteSession(SessionUdds * session);
+
+const char* getPrefixString(EntityNamePrefix prefix);
 
 } //ros2udds
 

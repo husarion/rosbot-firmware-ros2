@@ -3,21 +3,28 @@
 
 #include <mbed.h>
 #include <ros2udds.h>
-#include <EntitiesManager.h>
 
 namespace ros2udds{
 
-template <class MsgT>
-class Publisher
+class PublisherHandle
 {
     public:
-        Publisher(const char * name, int16_t id)
-        :data_writer_name("")
+        PublisherHandle(){};
+        virtual ~PublisherHandle(){};
+        virtual bool publish(SessionUdds * session, bool flush)=0;
+};
+
+template <class MsgT>
+class Publisher : public PublisherHandle
+{
+    public:
+        Publisher(const char * topic_name, int16_t id)
+        :_topic_name("")
         {
-            if(name != nullptr) sprintf(data_writer_name, "%s/%s", getPrefixString(TOPICS_PUBLISH), name);
+            if(topic_name != nullptr) sprintf(_topic_name, "%s/%s", getPrefixString(TOPICS_PUBLISH), topic_name);
             data_writer_udds.id.id = id;
             data_writer_udds.id.type = UXR_DATAWRITER_ID;
-            data_writer_udds.name = (const char *)data_writer_name;
+            data_writer_udds.name = (const char *)_topic_name;
             data_writer_udds.topic_type = topic.topic_udds.topic_type;    
         }
 
@@ -38,7 +45,9 @@ class Publisher
     public:
         MsgT topic;
         ros2udds::EntityUdds data_writer_udds;
-        char data_writer_name[32];
+    private:
+        char _topic_name[32];
+
 };
 } // ros2udds
 #endif /* __PUBLISHER_H__ */
