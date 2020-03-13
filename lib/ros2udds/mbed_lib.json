@@ -1,5 +1,5 @@
 {
-    "name":"ros2udds-mbed",
+    "name":"ros2udds",
     "macros":[
         "PLATFORM_NAME_BAREMETAL",
         "USER_DISABLE_UDP_TRANSPORT",

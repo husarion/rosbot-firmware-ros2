@@ -39,10 +39,9 @@ public:
   Header():
     Topic("std_msgs::msg::dds_::Header_", "Header", STD_MSGS_HEADER_ID),
     stamp()
-  { 
-    memset(frame_id, 0, sizeof(frame_id));
+  {
+      memset(frame_id, 0, sizeof(frame_id));
   }
-
 
   bool serialize(ucdrBuffer* msg_buf, const Header* topic)
   {

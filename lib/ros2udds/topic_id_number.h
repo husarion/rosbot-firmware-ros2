@@ -3,6 +3,8 @@
  *
  *  Created on: Mar 11, 2019
  *      Author: kei
+ *      Repository: https://github.com/ROBOTIS-GIT/ros2arduino
+ *      License: Apache 2.0
  */
 
 #ifndef SRC_LIB_ROS2XRCEDDS_TOPIC_ID_NUMBER_H_

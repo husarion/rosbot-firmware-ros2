@@ -1,14 +1,11 @@
 #include "ROSbot.h"
 #include <debug_logs.h>
 #include <BufferedSerial.h>
-#include "rosbot_kinematics.h"
 #include "rosbot_sensors.h"
-#define BATTERY_PUB_DATA_WRITER_ID 1
-#define ODOM_PUB_DATA_WRITER_ID 2
-#define VELOCITY_SUB_DATA_READER_ID 1
 #define MAIN_LOOP_SPIN_DELTA_TIME 10
 
-static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX,768);
+// static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX, 2048,2);
+static BufferedSerial serial(RPI_SERIAL_TX, RPI_SERIAL_RX, 2048,2);
 static DigitalOut sens_power(SENS_POWER_ON,0);
 static DigitalOut led2(LED2,0);
 static DigitalOut led3(LED3,0);
@@ -16,12 +13,11 @@ static DigitalOut led3(LED3,0);
 volatile bool is_speed_watchdog_enabled = true;
 volatile bool is_speed_watchdog_active = false;
 
-rosbot_kinematics::RosbotOdometry odometry;
 int speed_watchdog_interval = 1000; //ms
 Timer odom_watchdog_timer;
 volatile uint32_t last_speed_command_time=0;
 
-static ros2udds::EntityUdds udds_tree_base[] ={
+static ros2udds::Entity udds_tree_base[] ={
     {{1,UXR_PARTICIPANT_ID},"rosbot",nullptr,false},
     {{1,UXR_PUBLISHER_ID},nullptr,nullptr,false},
     {{1,UXR_SUBSCRIBER_ID},nullptr,nullptr,false},
@@ -66,11 +62,13 @@ extern "C"
 }
 
 ROSbot::ROSbot()
-: _battery_pub("battery",BATTERY_PUB_DATA_WRITER_ID)
-, _pose_pub("odom",ODOM_PUB_DATA_WRITER_ID)
-, _vel_sub("cmd_vel",&ROSbot::velocityCallback,this,VELOCITY_SUB_DATA_READER_ID)
+: _battery_pub(&_session,"battery")
+, _pose_pub(&_session,"odom")
+, _transform_pub(&_session,"/tf")
+, _vel_sub(&_session,"cmd_vel",&ROSbot::velocityCallback,this)
 , _connected(false)
 , _connection_error(0)
+, _entities_cnt(0)
 , _drive(RosbotDrive::getInstance())
 {}
 
@@ -79,24 +77,20 @@ ROSbot::~ROSbot(){}
 void ROSbot::addEntitiesToRegister()
 {
     int num = 0;
-    num+=_entities_manager.addEntities(udds_tree_base,3);
-    num+=_entities_manager.addEntities(&_battery_pub.topic.topic_udds);
-    num+=_entities_manager.addEntities(&_battery_pub.data_writer_udds);
-    num+=_entities_manager.addEntities(&_pose_pub.topic.topic_udds);
-    num+=_entities_manager.addEntities(&_pose_pub.data_writer_udds);
-    num+=_entities_manager.addEntities(&_vel_sub.topic.topic_udds);
-    num+=_entities_manager.addEntities(&_vel_sub.data_reader_udds);
-    if(num == 9)
-        LOG("UDDS: Entities successfully added to register!\r\n");
-    else
-        LOG("UDDS: There was an error during participants registration!\r\n");
+    for(int i=0;i<3;i++) num+=ros2udds::addEntity(&_session, &udds_tree_base[i]);
+    num+=_battery_pub.addToRegister();
+    num+=_pose_pub.addToRegister();
+    num+=_vel_sub.addToRegister();
+    num+=_transform_pub.addToRegister();
+    _entities_cnt = num;
+    LOG("%d entites added to register\r\n",num);    
 }
 
 void ROSbot::init()
 {
     ThisThread::sleep_for(1000);
     LOG("ROSbot initialization started!\r\n");
-    ros2udds::initTransport(&_session,(void*)&serial,460800);
+    ros2udds::initTransport(&_session,(void*)&serial,DDS_SERIAL_BAUDRATE);
     odom_watchdog_timer.start();
 
     _drive.setupMotorSequence(MOTOR_FR,MOTOR_FL,MOTOR_RR,MOTOR_RL);
@@ -107,6 +101,8 @@ void ROSbot::init()
     addEntitiesToRegister();
 
     // battery message initialization
+    _battery_pub.topic.cell_voltage_size = 3;
+    _battery_pub.topic.cell_temperature_size = 3;
     _battery_pub.topic.power_supply_health = sensor_msgs::BatteryHealth::POWER_SUPPLY_HEALTH_UNKNOWN;
     _battery_pub.topic.power_supply_status = sensor_msgs::BatteryStatus::POWER_SUPPLY_STATUS_UNKNOWN;
     _battery_pub.topic.power_supply_technology = sensor_msgs::BatteryTechnology::POWER_SUPPLY_TECHNOLOGY_LION;
@@ -114,41 +110,51 @@ void ROSbot::init()
 
     // odom message initialization
     strcpy(_pose_pub.topic.header.frame_id,"odom");
-    _pose_pub.topic.pose.position.x = 0;
-    _pose_pub.topic.pose.position.y = 0;
-    _pose_pub.topic.pose.position.z = 0;
-    _pose_pub.topic.pose.orientation.x = 0;
-    _pose_pub.topic.pose.orientation.y = 0;
-    _pose_pub.topic.pose.orientation.z = 0;
-    _pose_pub.topic.pose.orientation.w = 1;
+    _pose_pub.topic.pose.position.x = 0.0;
+    _pose_pub.topic.pose.position.y = 0.0;
+    _pose_pub.topic.pose.position.z = 0.0;
+    _pose_pub.topic.pose.orientation.x = 0.0;
+    _pose_pub.topic.pose.orientation.y = 0.0;
+    _pose_pub.topic.pose.orientation.z = 0.0;
+    _pose_pub.topic.pose.orientation.w = 1.0;
+
+    strcpy(_transform_pub.topic.header.frame_id, "odom"); 
+    strcpy(_transform_pub.topic.child_frame_id, "base_link");
+    _transform_pub.topic.transform.translation.x = 0.0;
+    _transform_pub.topic.transform.translation.y = 0.0;
+    _transform_pub.topic.transform.translation.z = 0.0;
+    _transform_pub.topic.transform.rotation.x = 0.0;
+    _transform_pub.topic.transform.rotation.y = 0.0;
+    _transform_pub.topic.transform.rotation.z = 0.0;
+    _transform_pub.topic.transform.rotation.w = 1.0;
+    memset(&_odometry.buffor,0,sizeof(float)*sizeof(_odometry.buffor[0])); //TODO: odometry module
 }
 
 bool ROSbot::restoreCommunication()
 {
-    bool res = ros2udds::initSession(&_session,0xAABBCCDD, on_topic_callback, this);
-    if(res)
+    if(ros2udds::initSession(&_session, 0xAABBCCDD, on_topic_callback, this))
     {
         LOG("Session initialization was successfull!\r\n");
-        if(res = _entities_manager.registerEntities(&_session))
+        if(_entities_cnt == ros2udds::registerEntities(&_session))
         {
             LOG("All entities registered successfully!\r\n");
 
             // subscribtion
             uint16_t request_id;
-            _vel_sub.subscribe(&_session, &request_id);
+            _vel_sub.subscribe(&request_id);
+            return true;
         }
         else
         {
             LOG("Problems with entities registration!\r\n");
         }
     }
-    return res;
+    return false;
 }
 
 void ROSbot::processOnTopic(uint16_t id, ucdrBuffer* ub)
 {
-    if(id == _vel_sub.data_reader_udds.id.id)
-        _vel_sub.call(ub);
+    if(id == _vel_sub.getId()) _vel_sub.call(ub);
 }
 
 void ROSbot::processOnStatus(uxrObjectId object_id, uint16_t request_id, uint8_t status)
@@ -158,10 +164,10 @@ void ROSbot::processOnStatus(uxrObjectId object_id, uint16_t request_id, uint8_t
 
 void ROSbot::velocityCallback(const geometry_msgs::Twist &msg)
 {
-    RosbotDrive & drive = RosbotDrive::getInstance();
-    rosbot_kinematics::setRosbotSpeed(drive,msg.linear.x, msg.angular.z);
+    rosbot_kinematics::setRosbotSpeed(_drive,msg.linear.x, msg.angular.z);
     last_speed_command_time = odom_watchdog_timer.read_ms();
     is_speed_watchdog_active = false;
+    LOG("Twist Vx: %.2f Wz: %.2f\r\n",msg.linear.x, msg.angular.z);
 }
 
 void ROSbot::processCommunicationStatus(bool status)
@@ -180,12 +186,13 @@ void ROSbot::processCommunicationStatus(bool status)
 void ROSbot::spin()
 {
     uint32_t spin_cnt = 0;
-    uint64_t current_time, last_time=0;
+    uint64_t current_time; 
+    float current_time_odom, last_time_odom=0.0f;
 
     while (1)
     {
         current_time = Kernel::get_ms_count();
-
+        
         if(is_speed_watchdog_enabled)
         {
             if(!is_speed_watchdog_active && (odom_watchdog_timer.read_ms() - last_speed_command_time) > speed_watchdog_interval)
@@ -197,8 +204,9 @@ void ROSbot::spin()
 
         if(spin_cnt % 2 == 0)
         {
-            float dtime = current_time - last_time / 1000.0f;
-            rosbot_kinematics::updateRosbotOdometry(_drive, odometry, dtime);
+            current_time_odom = odom_watchdog_timer.read();
+            rosbot_kinematics::updateRosbotOdometry(_drive, _odometry, current_time_odom - last_time_odom);
+            last_time_odom = current_time_odom;
         }
 
         if (_connected)
@@ -206,17 +214,18 @@ void ROSbot::spin()
             if (spin_cnt % 100 == 0)
             {
                 _battery_pub.topic.voltage = rosbot_sensors::updateBatteryWatchdog();
-                _battery_pub.publish(&_session);
+                _battery_pub.publish();
             }
-            if (spin_cnt % 5 == 0)
+            
+            if (spin_cnt % 20 == 0)
             {
-                _pose_pub.topic.pose.position.x = odometry.odom.robot_x_pos;
-                _pose_pub.topic.pose.position.y = odometry.odom.robot_y_pos;
-                _pose_pub.topic.pose.orientation.z = sin(odometry.odom.robot_angular_pos * 0.5);
-                _pose_pub.topic.pose.orientation.w = cos(odometry.odom.robot_angular_pos * 0.5);
-                _pose_pub.publish(&_session);
+                _pose_pub.topic.pose.position.x = _odometry.odom.robot_x_pos;
+                _pose_pub.topic.pose.position.y = _odometry.odom.robot_y_pos;
+                _pose_pub.topic.pose.orientation.z = sin(_odometry.odom.robot_angular_pos * 0.5);
+                _pose_pub.topic.pose.orientation.w = cos(_odometry.odom.robot_angular_pos * 0.5);
+                _transform_pub.publish();
             }
-            processCommunicationStatus(uxr_run_session_until_confirm_delivery(&_session.session, 10));
+            processCommunicationStatus(uxr_run_session_time(&_session.session, 5));
         }
         else
         {

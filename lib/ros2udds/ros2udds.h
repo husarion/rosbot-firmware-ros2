@@ -1,13 +1,19 @@
 #ifndef __ROS2_UDDS_H__
 #define __ROS2_UDDS_H__
 
+#include <stdlib.h>
 #include <string.h>
 #include <uxr/client/client.h>
 #include <ucdr/microcdr.h>
 
+#define UDDS_MAX_DATA_READERS 10
+#define UDDS_MAX_DATA_WRITERS 10
+#define UDDS_MAX_TOPICS (UDDS_MAX_DATA_READERS)+(UDDS_MAX_DATA_WRITERS)
+#define UDDS_ARRAY_SIZE 3 + UDDS_MAX_TOPICS + UDDS_MAX_DATA_WRITERS + UDDS_MAX_DATA_READERS
+
 namespace ros2udds{
 
-struct EntityUdds
+struct Entity
 {
     uxrObjectId id;
     const char *name;
@@ -15,7 +21,7 @@ struct EntityUdds
     bool active;
 };
 
-struct SessionUdds
+struct SessionHandle
 {
     uint32_t session_key;
     uxrSession session;
@@ -23,6 +29,7 @@ struct SessionUdds
     uxrStreamId input_stream_id;
     uxrSerialTransport transport_serial;
     uxrSerialPlatform platform_serial;
+    Entity * udds_entities[UDDS_ARRAY_SIZE];
     bool active;
 };
 
@@ -37,13 +44,19 @@ enum EntityNamePrefix : int
     ACTION
 };
 
-bool initTransport(SessionUdds * session, void * serial_instance, int baudrate);
+void initSessionUdds();
 
-bool initSession(SessionUdds * session, uint32_t session_key, uxrOnTopicFunc on_topic_func, void * args);
+bool initTransport(SessionHandle * session, void * serial_instance, int baudrate);
 
-bool deleteSession(SessionUdds * session);
+bool initSession(SessionHandle * session, uint32_t session_key, uxrOnTopicFunc on_topic_func, void * args);
+
+// bool deleteSession(SessionHandle * session);
 
 const char* getPrefixString(EntityNamePrefix prefix);
+
+int addEntity(SessionHandle * session, Entity * entity);
+
+int registerEntities(SessionHandle * session);
 
 } //ros2udds
 

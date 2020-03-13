@@ -72,8 +72,6 @@ public:
     return size - previousSize;
   }
 
-
-
 };
 
 } // namespace geometry_msgs

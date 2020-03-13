@@ -5,32 +5,39 @@
             "macro_name": "USE_WS2812B_ANIMATION_MANAGER",
             "value": 0,
             "required": false
+        },
+        "rosbot-serial-baudrate":
+        {
+            "help": "ROSbot DDS serial interface baudrate",
+            "accepted_values": [500000,460800],
+            "macro_name": "DDS_SERIAL_BAUDRATE",
+            "value": 500000,
+            "required": true 
         }
     },
     "macros": [
-        "ROSBOT_FW_VERSION=\"0.10.0\"",
-        "WELLCOME_BANNER",
-        "DEBUG_LOGS=1"
+        "ROSBOT_FW_ROS2_VERSION=\"0.1.0\"",
+        "WELLCOME_BANNER=1",
+        "DEBUG_LOGS=0"
     ],
     "target_overrides": {
         "CORE2": {
-            "rtos.main-thread-stack-size": 6144,
+            "rtos.main-thread-stack-size": 8192,
             "platform.all-stats-enabled": false,
             "events.shared-dispatch-from-application": 0,
             "events.shared-eventsize": 1024,
             "events.shared-stacksize": 2048,
             "platform.default-serial-baud-rate": 230400,
             "platform.stdio-baud-rate": 230400,
-            "target.stdio_uart_tx": "SENS3_PIN3", 
-            "target.stdio_uart_rx": "SENS3_PIN4",
-            "ros2udds-mbed.tx-pin": "FT_SERIAL_TX",
-            "ros2udds-mbed.rx-pin": "FT_SERIAL_RX",
+            "rosbot-serial-baudrate": 500000,
+            "target.stdio_uart_tx": "SENS3_PIN3_UART_TX", 
+            "target.stdio_uart_rx": "SENS3_PIN4_UART_RX",
             "mpu9250-lib.i2c-sda": "SENS2_PIN4",
             "mpu9250-lib.i2c-scl": "SENS2_PIN3",
             "mpu9250-lib.i2c-frequency": 100000,
             "mpu9250-lib.non-blocking": 1,
             "vl53l0x.non-blocking": 1,
-            "target.OUTPUT_EXT": "hex"
+            "target.OUTPUT_EXT": "bin"
         }
     }
 }

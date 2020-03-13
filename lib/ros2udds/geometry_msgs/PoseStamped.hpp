@@ -63,8 +63,8 @@ public:
 
   uint32_t size_of_topic(const PoseStamped* topic, uint32_t size)
   {
-    uint32_t previousSize = size;
-    size += pose.size_of_topic(&topic->pose, size);
+    uint32_t previousSize = size; 
+    size += header.size_of_topic(&topic->header, size); // KURWA MAC!!!
     size += pose.size_of_topic(&topic->pose, size);
     
     return size - previousSize;

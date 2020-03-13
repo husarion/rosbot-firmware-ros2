@@ -3,13 +3,12 @@
 
 #include <mbed.h>
 #include <RosbotDrive.h>
-#include <ros2udds.h>
-#include <EntitiesManager.h>
-#include <publisher.h>
-#include <subscriber.h>
+#include <rcl.h>
 #include <sensor_msgs/BatteryState.hpp>
 #include <geometry_msgs/Twist.hpp>
 #include <geometry_msgs/PoseStamped.hpp>
+#include <geometry_msgs/TransformStamped.hpp>
+#include "rosbot_kinematics.h"
 
 class ROSbot
 {
@@ -28,14 +27,16 @@ class ROSbot
         void velocityCallback(const geometry_msgs::Twist &msg);
 
     private:
-        ros2udds::SessionUdds _session;
-        ros2udds::EntitiesManager _entities_manager;
+        ros2udds::SessionHandle _session;
         ros2udds::Publisher<sensor_msgs::BatteryState> _battery_pub;
         ros2udds::Publisher<geometry_msgs::PoseStamped> _pose_pub;
+        ros2udds::Publisher<geometry_msgs::TransformStamped> _transform_pub;
         ros2udds::Subscriber<geometry_msgs::Twist, ROSbot> _vel_sub;
 
         bool _connected;
         int _connection_error;
+        int _entities_cnt;
+        rosbot_kinematics::RosbotOdometry _odometry;
     private:
         RosbotDrive & _drive;
 };
