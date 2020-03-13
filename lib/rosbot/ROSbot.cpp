@@ -217,13 +217,13 @@ void ROSbot::spin()
                 _battery_pub.publish();
             }
             
-            if (spin_cnt % 20 == 0)
+            if (spin_cnt % 5 == 0)
             {
                 _pose_pub.topic.pose.position.x = _odometry.odom.robot_x_pos;
                 _pose_pub.topic.pose.position.y = _odometry.odom.robot_y_pos;
                 _pose_pub.topic.pose.orientation.z = sin(_odometry.odom.robot_angular_pos * 0.5);
                 _pose_pub.topic.pose.orientation.w = cos(_odometry.odom.robot_angular_pos * 0.5);
-                _transform_pub.publish();
+                _pose_pub.publish();
             }
             processCommunicationStatus(uxr_run_session_time(&_session.session, 5));
         }
