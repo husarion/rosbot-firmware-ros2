@@ -11,7 +11,8 @@ ______  _____  _____  _             _                        _____
 \_| \_| \___/ \____/ |_.__/  \___/  \__|   |_|   \___/ |___/\_____/
                                                                    
 ```
-**firmware version:** `0.1.0`
+**firmware version:** `0.2.0`
+**Status:** `In development`
 
 ## Micro-XRCE-DDS Agent installation
 
@@ -25,4 +26,31 @@ $ sudo make install
 $ sudo ldconfig /usr/local/lib/
 ```
 
-**Status:** In development
+## DDS communication
+
+To start communication run `Micro-XRCE-DDS-Agent`:
+
+```bash
+$ MicroXRCEAgent serial --dev <SBC_port_name> -b <port_baudrate>
+```
+
+`<SBC_port_name>`:
+- `/dev/ttyS1` for Asus Tinker Board,
+- `/dev/ttyS4` for UpBoard
+
+`<port_baudrate>`:
+- `460800` for UpBoard
+- `500000` for Asus Tinker Board
+
+## ROS2 interface
+
+ROSbot subscribes to:
+
+* `/cmd_vel` with message type `geometry_msgs/Twist`
+* `/rosbot_time` with message type `builtin_msgs/Time` - temporarily for time synchronization
+
+ROSbot publishes to:
+
+* `/battery` with message type `sensor_msgs/BatteryState`
+* `/odom` with message type `geometry_msgs/PoseStamped`
+* `/tf` with message type `tf2_msgs/TFMessage`
