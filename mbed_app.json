@@ -16,8 +16,7 @@
         }
     },
     "macros": [
-        "ROSBOT_FW_ROS2_VERSION=\"0.1.0\"",
-        "WELLCOME_BANNER=1",
+        "ROSBOT_FW_ROS2_VERSION=\"0.2.0\"",
         "DEBUG_LOGS=0"
     ],
     "target_overrides": {

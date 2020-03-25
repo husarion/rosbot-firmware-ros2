@@ -25,7 +25,6 @@
 
 #include "../topic.hpp"
 
-
 #include "../std_msgs/Header.hpp"
 #include "../geometry_msgs/Transform.hpp"
 

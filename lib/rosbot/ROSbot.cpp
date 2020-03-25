@@ -2,10 +2,12 @@
 #include <debug_logs.h>
 #include <BufferedSerial.h>
 #include "rosbot_sensors.h"
+#include <baremetal_time.h>
+
 #define MAIN_LOOP_SPIN_DELTA_TIME 10
 
-// static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX, 2048,2);
-static BufferedSerial serial(RPI_SERIAL_TX, RPI_SERIAL_RX, 2048,2);
+static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX, 2048,2);
+// static BufferedSerial serial(RPI_SERIAL_TX, RPI_SERIAL_RX, 2048,2);
 static DigitalOut sens_power(SENS_POWER_ON,0);
 static DigitalOut led2(LED2,0);
 static DigitalOut led3(LED3,0);
@@ -59,16 +61,25 @@ extern "C"
         ROSbot * rosbot_ptr = (ROSbot*)args;
         rosbot_ptr->processOnTopic(object_id.id, ub);
     }
+
+// typedef void (*uxrOnTimeFunc) (struct uxrSession* session,
+//                                int64_t current_timestamp,
+//                                int64_t transmit_timestamp,
+//                                int64_t received_timestamp,
+//                                int64_t originate_timestamp,
+//                                void* args);
 }
 
 ROSbot::ROSbot()
 : _battery_pub(&_session,"battery")
 , _pose_pub(&_session,"odom")
-, _transform_pub(&_session,"/tf")
+, _transform_pub(&_session,"tf")
 , _vel_sub(&_session,"cmd_vel",&ROSbot::velocityCallback,this)
+, _time_sub(&_session,"rosbot_time",&ROSbot::syncTimeFromRemote,this)
 , _connected(false)
 , _connection_error(0)
 , _entities_cnt(0)
+, _us_when_synced_time(0)
 , _drive(RosbotDrive::getInstance())
 {}
 
@@ -82,6 +93,7 @@ void ROSbot::addEntitiesToRegister()
     num+=_pose_pub.addToRegister();
     num+=_vel_sub.addToRegister();
     num+=_transform_pub.addToRegister();
+    num+=_time_sub.addToRegister();
     _entities_cnt = num;
     LOG("%d entites added to register\r\n",num);    
 }
@@ -118,15 +130,15 @@ void ROSbot::init()
     _pose_pub.topic.pose.orientation.z = 0.0;
     _pose_pub.topic.pose.orientation.w = 1.0;
 
-    strcpy(_transform_pub.topic.header.frame_id, "odom"); 
-    strcpy(_transform_pub.topic.child_frame_id, "base_link");
-    _transform_pub.topic.transform.translation.x = 0.0;
-    _transform_pub.topic.transform.translation.y = 0.0;
-    _transform_pub.topic.transform.translation.z = 0.0;
-    _transform_pub.topic.transform.rotation.x = 0.0;
-    _transform_pub.topic.transform.rotation.y = 0.0;
-    _transform_pub.topic.transform.rotation.z = 0.0;
-    _transform_pub.topic.transform.rotation.w = 1.0;
+    strcpy(_transform_pub.topic.transforms.header.frame_id, "odom"); 
+    strcpy(_transform_pub.topic.transforms.child_frame_id, "base_link");
+    _transform_pub.topic.transforms.transform.translation.x = 0.0;
+    _transform_pub.topic.transforms.transform.translation.y = 0.0;
+    _transform_pub.topic.transforms.transform.translation.z = 0.0;
+    _transform_pub.topic.transforms.transform.rotation.x = 0.0;
+    _transform_pub.topic.transforms.transform.rotation.y = 0.0;
+    _transform_pub.topic.transforms.transform.rotation.z = 0.0;
+    _transform_pub.topic.transforms.transform.rotation.w = 1.0;
     memset(&_odometry.buffor,0,sizeof(float)*sizeof(_odometry.buffor[0])); //TODO: odometry module
 }
 
@@ -140,8 +152,9 @@ bool ROSbot::restoreCommunication()
             LOG("All entities registered successfully!\r\n");
 
             // subscribtion
-            uint16_t request_id;
-            _vel_sub.subscribe(&request_id);
+            uint16_t request_id[2];
+            _vel_sub.subscribe(&request_id[0]);
+            _time_sub.subscribe(&request_id[1]);
             return true;
         }
         else
@@ -154,7 +167,10 @@ bool ROSbot::restoreCommunication()
 
 void ROSbot::processOnTopic(uint16_t id, ucdrBuffer* ub)
 {
-    if(id == _vel_sub.getId()) _vel_sub.call(ub);
+    if(id == _vel_sub.getId()) 
+        _vel_sub.call(ub);
+    else if(id == _time_sub.getId()) 
+        _time_sub.call(ub);
 }
 
 void ROSbot::processOnStatus(uxrObjectId object_id, uint16_t request_id, uint8_t status)
@@ -214,16 +230,19 @@ void ROSbot::spin()
             if (spin_cnt % 100 == 0)
             {
                 _battery_pub.topic.voltage = rosbot_sensors::updateBatteryWatchdog();
+                _battery_pub.topic.header.stamp = now();
                 _battery_pub.publish();
             }
             
             if (spin_cnt % 5 == 0)
             {
-                _pose_pub.topic.pose.position.x = _odometry.odom.robot_x_pos;
-                _pose_pub.topic.pose.position.y = _odometry.odom.robot_y_pos;
-                _pose_pub.topic.pose.orientation.z = sin(_odometry.odom.robot_angular_pos * 0.5);
-                _pose_pub.topic.pose.orientation.w = cos(_odometry.odom.robot_angular_pos * 0.5);
+                _transform_pub.topic.transforms.header.stamp = _pose_pub.topic.header.stamp = now();
+                _transform_pub.topic.transforms.transform.translation.x = _pose_pub.topic.pose.position.x = _odometry.odom.robot_x_pos;
+                _transform_pub.topic.transforms.transform.translation.y = _pose_pub.topic.pose.position.y = _odometry.odom.robot_y_pos;
+                _transform_pub.topic.transforms.transform.rotation.z = _pose_pub.topic.pose.orientation.z = sin(_odometry.odom.robot_angular_pos * 0.5);
+                _transform_pub.topic.transforms.transform.rotation.w = _pose_pub.topic.pose.orientation.w = cos(_odometry.odom.robot_angular_pos * 0.5);
                 _pose_pub.publish();
+                _transform_pub.publish();
             }
             processCommunicationStatus(uxr_run_session_time(&_session.session, 5));
         }
@@ -235,4 +254,31 @@ void ROSbot::spin()
         ThisThread::sleep_until(current_time + MAIN_LOOP_SPIN_DELTA_TIME);
         spin_cnt++;
     }
+}
+
+builtin_interfaces::Time ROSbot::now()
+{
+  builtin_interfaces::Time ret_time = _synced_time_from_remote;
+  uint32_t us_offset = baremetal_micros() - _us_when_synced_time;
+  uint32_t remain_us = us_offset % 1000000U;
+
+  ret_time.sec += (int32_t)(us_offset/(uint32_t)1000000U);
+  if((ret_time.nanosec/1000U + remain_us) < 1000000U)
+  {
+    ret_time.nanosec += (uint32_t)(remain_us*(uint32_t)1000U);
+  }
+  else // >= 1sec
+  {
+    ret_time.sec += 1;
+    ret_time.nanosec = (uint32_t)(ret_time.nanosec + remain_us*(uint32_t)1000 - (uint32_t)1000000000);
+  }
+
+  return ret_time;
+}
+
+void ROSbot::syncTimeFromRemote(const builtin_interfaces::Time & msg)
+{
+  _us_when_synced_time             = baremetal_micros();
+  _synced_time_from_remote.sec     = msg.sec;
+  _synced_time_from_remote.nanosec = msg.nanosec;
 }

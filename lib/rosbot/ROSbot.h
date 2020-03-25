@@ -8,6 +8,7 @@
 #include <geometry_msgs/Twist.hpp>
 #include <geometry_msgs/PoseStamped.hpp>
 #include <geometry_msgs/TransformStamped.hpp>
+#include <tf2_msgs/TFMessage.hpp>
 #include "rosbot_kinematics.h"
 
 class ROSbot
@@ -25,18 +26,24 @@ class ROSbot
         void addEntitiesToRegister();
         bool restoreCommunication();
         void velocityCallback(const geometry_msgs::Twist &msg);
+        void syncTimeFromRemote(const builtin_interfaces::Time & msg);
+        builtin_interfaces::Time now();
 
     private:
         ros2udds::SessionHandle _session;
         ros2udds::Publisher<sensor_msgs::BatteryState> _battery_pub;
         ros2udds::Publisher<geometry_msgs::PoseStamped> _pose_pub;
-        ros2udds::Publisher<geometry_msgs::TransformStamped> _transform_pub;
+        ros2udds::Publisher<tf2_msgs::TFMessage> _transform_pub;
         ros2udds::Subscriber<geometry_msgs::Twist, ROSbot> _vel_sub;
+        ros2udds::Subscriber<builtin_interfaces::Time, ROSbot> _time_sub;
 
         bool _connected;
         int _connection_error;
         int _entities_cnt;
+        int64_t _us_when_synced_time;
         rosbot_kinematics::RosbotOdometry _odometry;
+        builtin_interfaces::Time _synced_time_from_remote;
+
     private:
         RosbotDrive & _drive;
 };
