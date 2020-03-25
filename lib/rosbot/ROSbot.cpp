@@ -6,8 +6,8 @@
 
 #define MAIN_LOOP_SPIN_DELTA_TIME 10
 
-static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX, 2048,2);
-// static BufferedSerial serial(RPI_SERIAL_TX, RPI_SERIAL_RX, 2048,2);
+// static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX, 2048,2);
+static BufferedSerial serial(RPI_SERIAL_TX, RPI_SERIAL_RX, 2048,2);
 static DigitalOut sens_power(SENS_POWER_ON,0);
 static DigitalOut led2(LED2,0);
 static DigitalOut led3(LED3,0);
