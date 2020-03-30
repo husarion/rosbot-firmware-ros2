@@ -21,7 +21,7 @@ int64_t baremetal_micros()
 
 int64_t baremetal_nanos()
 {
-    static uint32_t pre_usec = 0, now_usec;
+    static uint64_t pre_usec = 0, now_usec;
     static int64_t nsec = 0;
 
     now_usec = udds_timer.read_us();

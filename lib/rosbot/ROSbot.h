@@ -19,6 +19,10 @@ class ROSbot
         void init();
         void spin();
         void processOnTopic(uint16_t id, ucdrBuffer* ub);
+        void processOnTime(int64_t current_timestamp,
+                           int64_t transmit_timestamp,
+                           int64_t received_timestamp,
+                           int64_t originate_timestamp);
         void processOnStatus(uxrObjectId object_id, uint16_t request_id, uint8_t status);
 
     private:
@@ -37,10 +41,13 @@ class ROSbot
         ros2udds::Subscriber<geometry_msgs::Twist, ROSbot> _vel_sub;
         ros2udds::Subscriber<builtin_interfaces::Time, ROSbot> _time_sub;
 
+        ros2udds::PublisherHandle * _publishers[USER_ROS2_PUBLISHER_MAX];
+        ros2udds::SubscriberHandle * _subscribers[USER_ROS2_PUBLISHER_MAX];
+
         bool _connected;
         int _connection_error;
         int _entities_cnt;
-        int64_t _us_when_synced_time;
+        int64_t _ms_when_synced_time;
         rosbot_kinematics::RosbotOdometry _odometry;
         builtin_interfaces::Time _synced_time_from_remote;
 

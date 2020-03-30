@@ -44,13 +44,18 @@ enum EntityNamePrefix : int
     ACTION
 };
 
-void initSessionUdds();
+// void initSessionUdds();
 
 bool initTransport(SessionHandle * session, void * serial_instance, int baudrate);
 
-bool initSession(SessionHandle * session, uint32_t session_key, uxrOnTopicFunc on_topic_func, void * args);
+bool initSession(SessionHandle * session, uint32_t session_key);
 
-// bool deleteSession(SessionHandle * session);
+void registerSessionCallbacks(SessionHandle *session, 
+                              uxrOnTopicFunc on_topic_func, 
+                              uxrOnTimeFunc on_time_func, 
+                              void *args);
+
+bool deleteSession(SessionHandle * session);
 
 const char* getPrefixString(EntityNamePrefix prefix);
 

@@ -68,16 +68,13 @@ const char* ros2udds::getPrefixString(EntityNamePrefix prefix)
   return ROS2_DDS_ENTITY_PREFIX_NAME[prefix];
 }
 
-bool ros2udds::initSession(SessionHandle * session, uint32_t session_key, uxrOnTopicFunc on_topic_func, void * args)
+bool ros2udds::initSession(SessionHandle * session, uint32_t session_key)
 {
     session->active = false;
     session->session_key = session_key;
 
     // init session
     uxr_init_session(&session->session, &session->transport_serial.comm, session->session_key);
-    // set callbacks
-    // uxr_set_status_callback(&session->session,on_status_func,args);
-    uxr_set_topic_callback(&session->session,on_topic_func,args);
 
     if(!uxr_create_session(&session->session))
     {
@@ -96,16 +93,29 @@ bool ros2udds::initSession(SessionHandle * session, uint32_t session_key, uxrOnT
     return true;
 }
 
-// bool ros2udds::deleteSession(SessionHandle * session)
-// {
-//     //TODO implement session deletion
-// }
-
-int ros2udds::addEntity(SessionHandle * session, Entity * entity)
+void ros2udds::registerSessionCallbacks(SessionHandle * session, 
+                                        uxrOnTopicFunc on_topic_func, 
+                                        uxrOnTimeFunc on_time_func, 
+                                        void *args)
 {
-        int index = -1;
-        if(session != nullptr && entity != nullptr)
-        {
+    // set callbacks
+    // uxr_set_status_callback(&session->session,on_status_func,args);
+    uxr_set_topic_callback(&session->session,on_topic_func,args);
+    uxr_set_time_callback(&session->session,on_time_func, args);
+}
+
+
+bool ros2udds::deleteSession(SessionHandle * session)
+{
+    (void)session;
+    //TODO implement session deletion
+}
+
+int ros2udds::addEntity(SessionHandle *session, Entity *entity)
+{
+    int index = -1;
+    if (session != nullptr && entity != nullptr)
+    {
         switch (entity->id.type)
         {
         case UXR_PARTICIPANT_ID:
@@ -141,8 +151,8 @@ int ros2udds::addEntity(SessionHandle * session, Entity * entity)
             session->udds_entities[index] = entity;
             return 1;
         }
-        return 0;
     }
+    return 0;
 }
 
 //TODO: register in one approach

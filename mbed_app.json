@@ -16,7 +16,9 @@
         }
     },
     "macros": [
-        "ROSBOT_FW_ROS2_VERSION=\"0.2.0\"",
+        "ROSBOT_FW_ROS2_VERSION=\"0.3.0\"",
+        "NTP_TIME_SYNCH=1",
+        "DDS_RPI_SERIAL=1",
         "DEBUG_LOGS=0"
     ],
     "target_overrides": {
@@ -36,7 +38,7 @@
             "mpu9250-lib.i2c-frequency": 100000,
             "mpu9250-lib.non-blocking": 1,
             "vl53l0x.non-blocking": 1,
-            "target.OUTPUT_EXT": "bin"
+            "target.OUTPUT_EXT": "hex"
         }
     }
 }

@@ -3,11 +3,24 @@
 #include <BufferedSerial.h>
 #include "rosbot_sensors.h"
 #include <baremetal_time.h>
+#include <inttypes.h>
 
 #define MAIN_LOOP_SPIN_DELTA_TIME 10
 
-// static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX, 2048,2);
+#ifndef DDS_USB_SERIAL
+    #define JSON_NANO_SERIAL 0
+#endif
+
+#ifndef DDS_RPI_SERIAL
+    #define DDS_RPI_SERIAL 0
+#endif
+
+#if DDS_USB_SERIAL == 1
+static BufferedSerial serial(FT_SERIAL_TX, FT_SERIAL_RX, 2048,2);
+#elif DDS_RPI_SERIAL == 1
 static BufferedSerial serial(RPI_SERIAL_TX, RPI_SERIAL_RX, 2048,2);
+#endif 
+
 static DigitalOut sens_power(SENS_POWER_ON,0);
 static DigitalOut led2(LED2,0);
 static DigitalOut led3(LED3,0);
@@ -68,6 +81,17 @@ extern "C"
 //                                int64_t received_timestamp,
 //                                int64_t originate_timestamp,
 //                                void* args);
+    static void on_time_callback(struct uxrSession *session,
+                                 int64_t current_timestamp,
+                                 int64_t transmit_timestamp,
+                                 int64_t received_timestamp,
+                                 int64_t originate_timestamp,
+                                 void *args)
+    {
+        (void)session;
+        ROSbot * rosbot_ptr = (ROSbot *)args;
+        rosbot_ptr->processOnTime(current_timestamp, transmit_timestamp, received_timestamp, originate_timestamp);
+    }
 }
 
 ROSbot::ROSbot()
@@ -79,9 +103,16 @@ ROSbot::ROSbot()
 , _connected(false)
 , _connection_error(0)
 , _entities_cnt(0)
-, _us_when_synced_time(0)
+, _ms_when_synced_time(0)
 , _drive(RosbotDrive::getInstance())
-{}
+{
+    for(int i=0;i<USER_ROS2_PUBLISHER_MAX; i++) _publishers[i] = nullptr;
+    for(int i=0;i<USER_ROS2_SUBSCRIBER_MAX; i++) _subscribers[i] = nullptr;
+    int i = 0;
+    _publishers[i] = &_battery_pub; _subscribers[i++] = &_vel_sub;
+    _publishers[i++] = &_pose_pub;
+    _publishers[i++] = &_transform_pub;
+}
 
 ROSbot::~ROSbot(){}
 
@@ -89,13 +120,25 @@ void ROSbot::addEntitiesToRegister()
 {
     int num = 0;
     for(int i=0;i<3;i++) num+=ros2udds::addEntity(&_session, &udds_tree_base[i]);
-    num+=_battery_pub.addToRegister();
-    num+=_pose_pub.addToRegister();
-    num+=_vel_sub.addToRegister();
-    num+=_transform_pub.addToRegister();
-    num+=_time_sub.addToRegister();
+
+    for(int i =0; i < USER_ROS2_PUBLISHER_MAX; i++) 
+        if(_publishers[i] != nullptr) num+=_publishers[i]->addToRegister();
+    for(int i =0; i < USER_ROS2_SUBSCRIBER_MAX; i++) 
+        if(_subscribers[i] != nullptr) num+=_subscribers[i]->addToRegister();
+
     _entities_cnt = num;
     LOG("%d entites added to register\r\n",num);    
+}
+
+void ROSbot::processOnTime(int64_t current_timestamp,
+                          int64_t transmit_timestamp,
+                          int64_t received_timestamp,
+                          int64_t originate_timestamp)
+{
+    LOG("current_timestamp: %lld\r\n", current_timestamp);
+    LOG("transmit_timestamp: %lld\r\n", transmit_timestamp);
+    LOG("received_timestamp: %lld\r\n", received_timestamp);
+    LOG("originate_timestamp: %lld\r\n", originate_timestamp);
 }
 
 void ROSbot::init()
@@ -143,18 +186,20 @@ void ROSbot::init()
 }
 
 bool ROSbot::restoreCommunication()
-{
-    if(ros2udds::initSession(&_session, 0xAABBCCDD, on_topic_callback, this))
+{    
+    if(ros2udds::initSession(&_session, 0xAABBCCDD))
     {
         LOG("Session initialization was successfull!\r\n");
+        ros2udds::registerSessionCallbacks(&_session,on_topic_callback,nullptr,(void*)this);
         if(_entities_cnt == ros2udds::registerEntities(&_session))
         {
             LOG("All entities registered successfully!\r\n");
-
+            LOG("Synchronize time using NTP\r\n");
+            uxr_sync_session(&_session.session, 5);
             // subscribtion
-            uint16_t request_id[2];
-            _vel_sub.subscribe(&request_id[0]);
-            _time_sub.subscribe(&request_id[1]);
+            uint16_t request_id[USER_ROS2_SUBSCRIBER_MAX];
+            for(int i =0; i < USER_ROS2_SUBSCRIBER_MAX; i++) 
+                if(_subscribers[i] != nullptr) _subscribers[i]->subscribe(request_id+i);
             return true;
         }
         else
@@ -167,10 +212,14 @@ bool ROSbot::restoreCommunication()
 
 void ROSbot::processOnTopic(uint16_t id, ucdrBuffer* ub)
 {
-    if(id == _vel_sub.getId()) 
-        _vel_sub.call(ub);
-    else if(id == _time_sub.getId()) 
-        _time_sub.call(ub);
+    for(int i =0; i < USER_ROS2_SUBSCRIBER_MAX; i++) 
+    {
+        if(_subscribers[i] && id == _subscribers[i]->getId())
+        {
+            _subscribers[i]->call(ub);
+            break;
+        } 
+    }
 }
 
 void ROSbot::processOnStatus(uxrObjectId object_id, uint16_t request_id, uint8_t status)
@@ -225,8 +274,17 @@ void ROSbot::spin()
             last_time_odom = current_time_odom;
         }
 
+
         if (_connected)
         {
+            // if(spin_cnt % 500 == 0)
+            // {
+            //     if(uxr_sync_session(&_session.session, 5))
+            //     {
+            //         LOG("new time_offset: %lld\r\n", _session.session.time_offset);
+            //     }
+            // }
+
             if (spin_cnt % 100 == 0)
             {
                 _battery_pub.topic.voltage = rosbot_sensors::updateBatteryWatchdog();
@@ -258,27 +316,35 @@ void ROSbot::spin()
 
 builtin_interfaces::Time ROSbot::now()
 {
+#if defined(NTP_TIME_SYNCH)
+  builtin_interfaces::Time ret_time;
+  int64_t nanos = uxr_epoch_nanos(&_session.session);
+  ret_time.sec = (int32_t)(nanos / 1000000000);
+  ret_time.nanosec = (uint32_t)(nanos - ret_time.sec * 1000000000);
+#else
   builtin_interfaces::Time ret_time = _synced_time_from_remote;
-  uint32_t us_offset = baremetal_micros() - _us_when_synced_time;
-  uint32_t remain_us = us_offset % 1000000U;
+  int64_t msec_offset = baremetal_millis() - _ms_when_synced_time;
+  uint32_t remain_msec = msec_offset%1000;
 
-  ret_time.sec += (int32_t)(us_offset/(uint32_t)1000000U);
-  if((ret_time.nanosec/1000U + remain_us) < 1000000U)
+  ret_time.sec += (int32_t)(msec_offset/1000);
+  if((ret_time.nanosec/(uint32_t)1000000 + remain_msec) < 1000)
   {
-    ret_time.nanosec += (uint32_t)(remain_us*(uint32_t)1000U);
+    ret_time.nanosec += (uint32_t)(remain_msec*(uint32_t)1000000);
   }
   else // >= 1sec
   {
     ret_time.sec += 1;
-    ret_time.nanosec = (uint32_t)(ret_time.nanosec + remain_us*(uint32_t)1000 - (uint32_t)1000000000);
+    ret_time.nanosec = (uint32_t)(ret_time.nanosec + remain_msec*(uint32_t)1000000 - (uint32_t)1000000000);
   }
+#endif
 
   return ret_time;
 }
 
+//deprecated
 void ROSbot::syncTimeFromRemote(const builtin_interfaces::Time & msg)
 {
-  _us_when_synced_time             = baremetal_micros();
+  _ms_when_synced_time             = baremetal_millis();
   _synced_time_from_remote.sec     = msg.sec;
   _synced_time_from_remote.nanosec = msg.nanosec;
 }
