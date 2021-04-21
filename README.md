@@ -1,4 +1,7 @@
-# rosbot-firmware-ros2
+# rosbot-firmware-ros2 [deprecated]
+
+> use https://github.com/husarion/rosbot-stm32-firmware instead
+
 The **ROS2** compatible (dashing), **ROSbot** mobile platform's MCU firmware. Written in C/C++ using arm's **Mbed OS** framework ( mbed-os-5.14.1). DDS layer uses [eProsima Micro-XRCE-DDS Client](https://micro-xrce-dds.readthedocs.io/en/latest/index.html) library.
 
 
